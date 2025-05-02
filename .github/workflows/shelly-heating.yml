@@ -1,0 +1,28 @@
+name: Shelly Heating Control
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  control_heating:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Hae nykyinen tunti ja sähköhinnat
+      run: |
+        echo "Haetaan nykyinen tunti ja halvat tunnit..."
+        CURRENT_HOUR=$(date -u +%H)
+        echo "Kello (UTC): $CURRENT_HOUR"
+
+        CHEAP_HOURS=$(curl -s https://www.sahkohinta-api.fi/api/v1/halpa?tunnit=6 | jq -r '.[].aikaleima_suomi' | cut -c12-13)
+        echo "Halvat tunnit (Suomi): $CHEAP_HOURS"
+
+        if echo "$CHEAP_HOURS" | grep -q "$((10#$CURRENT_HOUR))"; then
+          echo "Halpa tunti -> Kotona-tila päälle."
+          curl -s "https://api.shelly.cloud/device/relay/control?channel=0&id=${{ secrets.SHELLY_DEVICE_ID }}&turn=on&auth=${{ secrets.SHELLY_API_KEY }}"
+        else
+          echo "Halpa tunti päättyi -> Paluu Poissa-tilaan."
+          curl -s "https://api.shelly.cloud/device/relay/control?channel=0&id=${{ secrets.SHELLY_DEVICE_ID }}&turn=off&auth=${{ secrets.SHELLY_API_KEY }}"
+        fi
