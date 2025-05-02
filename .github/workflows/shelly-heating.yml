@@ -15,8 +15,8 @@ jobs:
         echo "Haetaan nykyinen tunti ja halvat tunnit..."
         CURRENT_HOUR=$(date -u +%H)
         echo "Kello (UTC): $CURRENT_HOUR"
-
-        CHEAP_HOURS=$(curl -s https://www.sahkohinta-api.fi/api/v1/halpa?tunnit=6 | jq -r '.[].aikaleima_suomi' | cut -c12-13)
+        
+        CHEAP_HOURS=$(curl -s https://www.sahkohinta-api.fi/api/v1/halpa?tunnit=6 | jq -r 'if .[0] then .[].aikaleima_suomi else empty end' | cut -c12-13)
         echo "Halvat tunnit (Suomi): $CHEAP_HOURS"
 
         if echo "$CHEAP_HOURS" | grep -q "$((10#$CURRENT_HOUR))"; then
